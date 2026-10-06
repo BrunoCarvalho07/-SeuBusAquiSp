@@ -1,0 +1,20 @@
+{
+  "name": "busaqui",
+  "version": "1.0.0",
+  "description": "Aplicação web para rastreamento de ônibus em tempo real em São Paulo com a API Olho Vivo SPTrans",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test-flow": "node server/test-flow.js"
+  },
+  "keywords": ["sptrans", "olho-vivo", "onibus", "sao-paulo", "transporte", "leaflet"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  }
+}

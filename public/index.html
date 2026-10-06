@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SeuBusAqui - Ônibus em Tempo Real (São Paulo / SPTrans)</title>
+  <meta name="description" content="Acompanhe ônibus em tempo real na capital de São Paulo com previsão de chegada e itinerários da SPTrans.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%200%20100%20100%22><text y=%22.9em%22 font-size=%2290%22>🚌</text></svg>">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Alerta do Modo Demonstração / Status -->
+  <div id="demo-banner" class="demo-banner hidden" role="status" aria-live="polite">
+    <div class="banner-content">
+      <span class="banner-icon">⚠️</span>
+      <div class="banner-text">
+        <strong>Modo de Demonstração Ativo</strong>
+        <span>Dados simulados de São Paulo. Adicione o seu <code>SPTRANS_TOKEN</code> no arquivo <code>.env</code> para acompanhar a frota real.</span>
+      </div>
+      <button id="btn-close-banner" class="btn-icon" aria-label="Fechar aviso">✕</button>
+    </div>
+  </div>
+
+  <!-- Indicador de Atualização em Tempo Real -->
+  <div id="live-indicator" class="live-indicator hidden" aria-live="polite">
+    <span class="pulsing-dot"></span>
+    <span id="live-indicator-text">Atualizando posições...</span>
+  </div>
+
+  <!-- Container Principal do Mapa em Tela Cheia -->
+  <main id="map" class="map-container" aria-label="Mapa de ônibus de São Paulo"></main>
+
+  <!-- Botão de controle de Tema e Centralização -->
+  <aside class="floating-controls" aria-label="Controles rápidos">
+    <button id="btn-theme-toggle" class="control-btn" title="Alternar tema claro/escuro" aria-label="Alternar tema claro ou escuro">
+      <span class="icon" id="theme-icon">🌓</span>
+    </button>
+    <button id="btn-geo" class="control-btn" title="Paradas perto de mim" aria-label="Buscar paradas perto da minha localização atual">
+      <span class="icon">📍</span>
+    </button>
+    <button id="btn-toggle-sidebar" class="control-btn" title="Abrir painel" aria-label="Abrir ou fechar painel de linhas e paradas">
+      <span class="icon">📋</span>
+    </button>
+  </aside>
+
+  <!-- Painel Lateral / Bottom Sheet -->
+  <section id="sidebar" class="sidebar" aria-label="Painel de controle do SeuBusAqui">
+    <!-- Barra de arraste para mobile -->
+    <div class="sheet-drag-handle" id="sheet-handle" aria-hidden="true"></div>
+
+    <header class="sidebar-header">
+      <div class="brand">
+        <span class="logo-icon">🚌</span>
+        <div class="brand-text">
+          <h1>SeuBusAqui</h1>
+          <span class="subtitle">São Paulo em tempo real</span>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-near-me" class="btn-pill" aria-label="Paradas perto de mim">
+          📍 Perto de mim
+        </button>
+      </div>
+    </header>
+
+    <!-- Barra de Pesquisa -->
+    <div class="search-box-container">
+      <form id="search-form" class="search-form" role="search" onsubmit="event.preventDefault();">
+        <div class="search-input-wrapper">
+          <span class="search-icon" aria-hidden="true">🔍</span>
+          <input 
+            type="search" 
+            id="search-input" 
+            placeholder="Digite número ou nome da linha (ex: 8000, Lapa)" 
+            autocomplete="off"
+            aria-label="Buscar linha de ônibus"
+          />
+          <button type="button" id="btn-clear-search" class="clear-btn hidden" aria-label="Limpar busca">✕</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Abas: Resultados de Busca e Favoritos -->
+    <nav class="tabs-nav" role="tablist">
+      <button class="tab-btn active" id="tab-btn-results" role="tab" aria-selected="true" aria-controls="tab-results">
+        Linhas & Busca
+      </button>
+      <button class="tab-btn" id="tab-btn-favorites" role="tab" aria-selected="false" aria-controls="tab-favorites">
+        ⭐ Favoritos <span id="fav-count" class="badge">0</span>
+      </button>
+    </nav>
+
+    <!-- Conteúdo do Painel -->
+    <div class="panel-content">
+      <!-- Aba de Resultados da Busca / Linha Selecionada -->
+      <div id="tab-results" class="tab-panel active" role="tabpanel">
+        
+        <!-- Bloco de Informações da Linha Selecionada -->
+        <div id="selected-line-card" class="selected-line-card hidden">
+          <div class="line-header">
+            <div class="line-badge" id="line-code-badge">8000-10</div>
+            <div class="line-details">
+              <h2 id="line-dest-title" class="line-dest">Destino</h2>
+              <span id="line-origin-sub" class="line-origin">Origem</span>
+            </div>
+            <button id="btn-fav-line" class="btn-icon fav-btn" title="Favoritar linha" aria-label="Favoritar esta linha">
+              ★
+            </button>
+          </div>
+
+          <div class="line-meta-bar">
+            <span class="meta-item"><b id="bus-count-badge">0</b> veículos ativos</span>
+            <span class="meta-item" id="last-update-time">Atualizado: --:--</span>
+            <button id="btn-refresh-line" class="btn-text-action" title="Atualizar agora">🔄 Atualizar</button>
+          </div>
+
+          <div class="line-actions">
+            <button id="btn-show-stops" class="btn-outline active" data-active="true">
+              🚏 Ocultar Paradas
+            </button>
+            <button id="btn-close-line" class="btn-outline" title="Fechar visualização da linha">
+              ✕ Fechar Linha
+            </button>
+          </div>
+        </div>
+
+        <!-- Lista de Resultados de Linhas -->
+        <div id="results-list" class="items-list" aria-live="polite">
+          <div class="empty-state">
+            <span class="empty-icon">🔎</span>
+            <p>Busque por uma linha ou destino acima para acompanhar os ônibus no mapa.</p>
+            <div class="suggestions">
+              <span>Sugestões rápidas:</span>
+              <button class="suggestion-chip" data-query="8000">8000 (Term. Lapa)</button>
+              <button class="suggestion-chip" data-query="875A">875A (Aeroporto)</button>
+              <button class="suggestion-chip" data-query="175P">175P (Metrô Santana)</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Aba de Favoritos -->
+      <div id="tab-favorites" class="tab-panel" role="tabpanel">
+        <div id="favorites-list" class="items-list">
+          <div class="empty-state">
+            <span class="empty-icon">⭐</span>
+            <p>Você ainda não favoritou nenhuma linha ou parada.</p>
+            <span class="empty-help">Clique na estrelinha de qualquer linha ou parada para salvá-la aqui para acesso rápido.</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rodapé informativo do painel -->
+    <footer class="sidebar-footer">
+      <span>Fonte: Dados abertos SPTrans Olho Vivo v2.1</span>
+    </footer>
+  </section>
+
+  <!-- Modal / Drawer para Detalhes de Previsão de Parada -->
+  <dialog id="modal-stop-prediction" class="prediction-dialog" aria-labelledby="prediction-title">
+    <div class="dialog-content">
+      <header class="dialog-header">
+        <div class="dialog-title-wrap">
+          <span class="stop-icon">🚏</span>
+          <div>
+            <h3 id="prediction-title">Previsão de Chegada</h3>
+            <p id="prediction-address" class="dialog-subtitle"></p>
+          </div>
+        </div>
+        <button id="btn-close-modal" class="btn-icon" aria-label="Fechar janela">✕</button>
+      </header>
+
+      <div id="prediction-body" class="dialog-body">
+        <div class="loader-wrap">
+          <div class="spinner"></div>
+          <p>Buscando previsão de chegada na parada...</p>
+        </div>
+      </div>
+
+      <footer class="dialog-footer">
+        <button id="btn-fav-stop-modal" class="btn-secondary">⭐ Favoritar Parada</button>
+        <button id="btn-refresh-stop-modal" class="btn-primary">🔄 Atualizar Previsão</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- Mensagem Toast de Notificação -->
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Scripts da Aplicação BusAqui (ES Modules) -->
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
