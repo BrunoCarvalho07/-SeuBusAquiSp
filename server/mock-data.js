@@ -57,6 +57,24 @@ export const mockLinhas = [
     tl: 10,
     tp: "TERM. PQ. D. PEDRO II",
     ts: "TERM. AE CARVALHO"
+  },
+  {
+    cl: 3725,
+    lc: false,
+    lt: "3725",
+    sl: 1,
+    tl: 10,
+    tp: "METRO CARRAO",
+    ts: "TERM. VILA CARRAO"
+  },
+  {
+    cl: 37252,
+    lc: false,
+    lt: "3725",
+    sl: 2,
+    tl: 10,
+    tp: "TERM. VILA CARRAO",
+    ts: "METRO CARRAO"
   }
 ];
 
@@ -83,6 +101,13 @@ export const mockParadasPorLinha = {
     { cp: 340016002, np: "Av. Paulista (MASP)", ed: "Av Paulista, 1578", py: -23.5614, px: -46.6559 },
     { cp: 340016003, np: "Av. 23 de Maio, altura Paraíso", ed: "Av 23 de Maio", py: -23.5750, px: -46.6450 },
     { cp: 340016004, np: "Aeroporto de Congonhas", ed: "Av Washington Luís", py: -23.6261, px: -46.6565 }
+  ],
+  // 3725-10 (Metrô Carrão)
+  3725: [
+    { cp: 340017001, np: "Terminal Metrô Carrão", ed: "Rua Melo Freire", py: -23.5388, px: -46.5642 },
+    { cp: 340017002, np: "Rua Cantagalo, 1400", ed: "Rua Cantagalo", py: -23.5412, px: -46.5580 },
+    { cp: 340017003, np: "Av. Conselheiro Carrão, 1800", ed: "Av Conselheiro Carrão", py: -23.5470, px: -46.5490 },
+    { cp: 340017004, np: "Terminal Vila Carrão", ed: "Av Dezenove de Janeiro", py: -23.5535, px: -46.5410 }
   ]
 };
 
