@@ -179,74 +179,98 @@ export class SPTransService {
   // --- Rotas mapeadas da SPTrans ---
 
   async buscarLinhas(termo) {
-    if (this.isDemoMode) {
-      const q = (termo || "").toLowerCase().trim();
-      if (!q) return mockLinhas;
-      return mockLinhas.filter(
-        (l) =>
-          l.lt.toLowerCase().includes(q) ||
-          l.tp.toLowerCase().includes(q) ||
-          l.ts.toLowerCase().includes(q)
-      );
+    if (this.isAuthenticated && this.sessionCookie) {
+      try {
+        const data = await this.authenticatedGet(`/Linha/Buscar?termosBusca=${encodeURIComponent(termo)}`);
+        if (data && Array.isArray(data)) return data;
+      } catch (err) {
+        console.warn("[SPTrans] Erro na busca de linha oficial, usando fallback:", err.message);
+      }
     }
 
-    const data = await this.authenticatedGet(`/Linha/Buscar?termosBusca=${encodeURIComponent(termo)}`);
-    return data ?? [];
+    // Fallback de dados
+    const q = (termo || "").toLowerCase().trim();
+    if (!q) return mockLinhas;
+    return mockLinhas.filter(
+      (l) =>
+        l.lt.toLowerCase().includes(q) ||
+        l.tp.toLowerCase().includes(q) ||
+        l.ts.toLowerCase().includes(q)
+    );
   }
 
   async buscarPosicao(codigoLinha) {
-    if (this.isDemoMode) {
-      return getMockPosicao(codigoLinha);
+    if (this.isAuthenticated && this.sessionCookie) {
+      try {
+        const data = await this.authenticatedGet(`/Posicao/Linha?codigoLinha=${encodeURIComponent(codigoLinha)}`);
+        if (data && data.vs) return data;
+      } catch (err) {
+        console.warn("[SPTrans] Erro na busca de posições oficial, usando fallback:", err.message);
+      }
     }
 
-    const data = await this.authenticatedGet(`/Posicao/Linha?codigoLinha=${encodeURIComponent(codigoLinha)}`);
-    return data;
+    return getMockPosicao(codigoLinha);
   }
 
   async buscarParadas(termo) {
-    if (this.isDemoMode) {
-      const q = (termo || "").toLowerCase().trim();
-      const allStops = Object.values(mockParadasPorLinha).flat();
-      const unique = Array.from(new Map(allStops.map((p) => [p.cp, p])).values());
-      if (!q) return unique;
-      return unique.filter(
-        (p) =>
-          p.np.toLowerCase().includes(q) ||
-          (p.ed && p.ed.toLowerCase().includes(q))
-      );
+    if (this.isAuthenticated && this.sessionCookie) {
+      try {
+        const data = await this.authenticatedGet(`/Parada/Buscar?termosBusca=${encodeURIComponent(termo)}`);
+        if (data && Array.isArray(data)) return data;
+      } catch (err) {
+        console.warn("[SPTrans] Erro na busca de paradas oficial, usando fallback:", err.message);
+      }
     }
 
-    const data = await this.authenticatedGet(`/Parada/Buscar?termosBusca=${encodeURIComponent(termo)}`);
-    return data ?? [];
+    const q = (termo || "").toLowerCase().trim();
+    const allStops = Object.values(mockParadasPorLinha).flat();
+    const unique = Array.from(new Map(allStops.map((p) => [p.cp, p])).values());
+    if (!q) return unique;
+    return unique.filter(
+      (p) =>
+        p.np.toLowerCase().includes(q) ||
+        (p.ed && p.ed.toLowerCase().includes(q))
+    );
   }
 
   async buscarParadasPorLinha(codigoLinha) {
-    if (this.isDemoMode) {
-      const paradas = mockParadasPorLinha[Number(codigoLinha)];
-      if (paradas) return paradas;
-      // Retorna paradas padrão se a linha for desconhecida no mock
-      return mockParadasPorLinha[2503] || [];
+    if (this.isAuthenticated && this.sessionCookie) {
+      try {
+        const data = await this.authenticatedGet(`/Parada/BuscarParadasPorLinha?codigoLinha=${encodeURIComponent(codigoLinha)}`);
+        if (data && Array.isArray(data)) return data;
+      } catch (err) {
+        console.warn("[SPTrans] Erro na busca de paradas da linha oficial, usando fallback:", err.message);
+      }
     }
 
-    const data = await this.authenticatedGet(`/Parada/BuscarParadasPorLinha?codigoLinha=${encodeURIComponent(codigoLinha)}`);
-    return data ?? [];
+    const paradas = mockParadasPorLinha[Number(codigoLinha)];
+    if (paradas) return paradas;
+    return mockParadasPorLinha[2503] || [];
   }
 
   async buscarPrevisaoParada(codigoParada) {
-    if (this.isDemoMode) {
-      return getMockPrevisaoParada(codigoParada);
+    if (this.isAuthenticated && this.sessionCookie) {
+      try {
+        const data = await this.authenticatedGet(`/Previsao/Parada?codigoParada=${encodeURIComponent(codigoParada)}`);
+        if (data && data.p) return data;
+      } catch (err) {
+        console.warn("[SPTrans] Erro na previsão de parada oficial, usando fallback:", err.message);
+      }
     }
 
-    const data = await this.authenticatedGet(`/Previsao/Parada?codigoParada=${encodeURIComponent(codigoParada)}`);
-    return data;
+    return getMockPrevisaoParada(codigoParada);
   }
 
   async buscarPrevisaoLinha(codigoLinha) {
-    if (this.isDemoMode) {
-      return getMockPrevisaoLinha(codigoLinha);
+    if (this.isAuthenticated && this.sessionCookie) {
+      try {
+        const data = await this.authenticatedGet(`/Previsao/Linha?codigoLinha=${encodeURIComponent(codigoLinha)}`);
+        if (data && data.ps) return data;
+      } catch (err) {
+        console.warn("[SPTrans] Erro na previsão da linha oficial, usando fallback:", err.message);
+      }
     }
 
-    const data = await this.authenticatedGet(`/Previsao/Linha?codigoLinha=${encodeURIComponent(codigoLinha)}`);
-    return data;
+    return getMockPrevisaoLinha(codigoLinha);
   }
 }
