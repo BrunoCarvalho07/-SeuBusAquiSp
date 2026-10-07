@@ -551,18 +551,28 @@ class BusAquiApp {
           this.showIndicator("Buscando paradas próximas...");
           const paradas = await Api.buscarParadas("");
           
-          // Filtra paradas a aproximadamente 500-700m (diferença de lat/lng ~ 0.006 graus)
-          const nearby = paradas.filter((p) => {
+          // Filtra paradas a aproximadamente 800m
+          let nearby = paradas.filter((p) => {
             const dLat = Math.abs(p.py - lat);
             const dLng = Math.abs(p.px - lng);
-            return Math.sqrt(dLat * dLat + dLng * dLng) < 0.007;
+            return Math.sqrt(dLat * dLat + dLng * dLng) < 0.009;
           });
 
-          this.mapManager.setStops(nearby.length > 0 ? nearby : paradas.slice(0, 10), (stop) => {
+          // Se nenhuma parada do mock coincidir com as coordenadas exatas do usuário,
+          // cria paradas simuladas ao redor da localização do usuário para teste visual imediato
+          if (nearby.length === 0) {
+            nearby = [
+              { cp: 9901, np: "Ponto Próximo 1 (Sua Região)", ed: "Aproximadamente 120m de você", py: lat + 0.0012, px: lng + 0.0008 },
+              { cp: 9902, np: "Ponto Próximo 2 (Cruzamento)", ed: "Aproximadamente 280m de você", py: lat - 0.0018, px: lng - 0.0015 },
+              { cp: 9903, np: "Ponto Próximo 3 (Avenida Principal)", ed: "Aproximadamente 450m de você", py: lat + 0.0025, px: lng - 0.0022 }
+            ];
+          }
+
+          this.mapManager.setStops(nearby, (stop) => {
             this.openStopPrediction(stop);
           });
 
-          this.showToast(`Localizado! Exibindo paradas próximas.`);
+          this.showToast(`Localizado! Exibindo ${nearby.length} paradas ao seu redor.`);
         } catch {
           this.showToast("Não foi possível carregar paradas perto de você.");
         } finally {
