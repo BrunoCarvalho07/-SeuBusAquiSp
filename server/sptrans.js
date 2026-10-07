@@ -58,18 +58,18 @@ export class SPTransService {
             this.sessionCookie = cookies.map((c) => c.split(";")[0]).join("; ");
           }
           this.isAuthenticated = true;
+          this.isDemoMode = false;
           console.log("[SPTrans] Autenticação realizada com sucesso!");
           return true;
         } else {
-          console.warn("[SPTrans] Falha de autenticação (token rejeitado). Ativando Modo de Demonstração...");
-          this.isDemoMode = true;
+          console.warn("[SPTrans] Token ainda não liberado nos servidores da SPTrans (resposta false). Operando em modo de espera/demonstração...");
+          // Mantém isDemoMode como fallback temporário desta requisição, mas tenta novamente quando a SPTrans liberar
           this.isAuthenticated = false;
           return false;
         }
       } catch (err) {
         console.error("[SPTrans] Erro de rede na autenticação:", err.message);
-        console.warn("[SPTrans] Alternando para Modo Demonstração temporário.");
-        this.isDemoMode = true;
+        this.isAuthenticated = false;
         return false;
       } finally {
         this.authPromise = null;
